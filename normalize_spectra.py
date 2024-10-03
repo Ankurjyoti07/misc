@@ -22,7 +22,7 @@ def write_espresso(infile, flux, outfile, wave=None):
     print("Data written to %s" % outfile)
 
 def read_espresso(infile):
-    print("%s: Input file is a HERMES file." % infile)
+    print("%s: input file is an espresso spectrum" % infile)
     
     hdul_infile = fits.open(infile)
     wave = hdul_infile[1].data[0][5]
@@ -378,7 +378,7 @@ def scale_raw_spectra(w, f, window=[7500, 7550]):
 def print_help():
     print("")
     print("****************************************")
-    print("* HERMES Binary Spectrum Normalization *")
+    print("* espresso manual normalization *")
     print("****************************************")
     print("")
     print('n - normalize and save knots specific to spectrum')
