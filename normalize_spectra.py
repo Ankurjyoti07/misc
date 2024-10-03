@@ -12,7 +12,7 @@ This code was developed by Michael Abdul-Masih and modified by Sanjay Sekaran, j
 modified by Ankur Kalita @ a.j.kalita2@ncl.ac.uk
 '''
 
-def write_hermes(infile, flux, outfile, wave=None):
+def write_espresso(infile, flux, outfile, wave=None):
     hdul_infile = fits.open(infile)
     hdul_new = fits.HDUList()
     primheader = hdul_infile[0].header.copy()    
@@ -21,7 +21,7 @@ def write_hermes(infile, flux, outfile, wave=None):
     hdul_new.writeto(outfile)    
     print("Data written to %s" % outfile)
 
-def read_HERMES(infile):
+def read_espresso(infile):
     print("%s: Input file is a HERMES file." % infile)
     
     hdul_infile = fits.open(infile)
@@ -93,18 +93,18 @@ class PointBrowser(object):
             self.normalize()
 
             self.vertical_x_cen.sort()
-            np.savetxt(self.files[self.file_number].split('.fits')
+            np.savetxt('./knots/'+self.files[self.file_number].split('.fits')
                        [0] + '_knots.txt', self.vertical_x_cen)
 
             self.file_number += 1
-
+            
             if self.file_number < self.number_of_files:
                 self.reset_plots()
             else:
                 plt.close(self.fig)
                 print("-----------------------------------")
                 print("Done normalizing " + str(self.number_of_files) + " spectra.")
-
+            
 
         elif event.key == 'enter':
             # print('fitting spline...')
@@ -113,7 +113,7 @@ class PointBrowser(object):
         elif event.key == 'r':
             try:  # reads in knots if available
                 print("Trying to read in saved knots.")
-                x = np.loadtxt(self.files[self.file_number].split('.fits')[0]
+                x = np.loadtxt('./knots/'+self.files[self.file_number].split('.fits')[0]
                                + '_knots.txt')
                 self.vertical_x_cen = list(x)
                 self.vertical_x_cen.sort()
@@ -149,9 +149,10 @@ class PointBrowser(object):
                        + '_knots.txt', self.vertical_x_cen)
         elif event.key == 'm':
             self.vertical_x_cen.sort()
-            np.savetxt(self.filepath + '/knots.txt', self.vertical_x_cen)
+            np.savetxt('./knots/'+self.filepath + '_knots.txt', self.vertical_x_cen)
         elif event.key == 'u':  # updates on number of knots currently selected
             print(len(self.vertical_x_cen))
+        
         elif event.key == 'd':
             # delets last knot
             try:
@@ -164,10 +165,12 @@ class PointBrowser(object):
                                    sorted(zip(self.vertical_x_cen,
                                               self.flux_knots))]
                 self.vertical_x_cen.sort()
+                self.update()
             except Exception:
                 pass
 
         self.update()
+        
 
     def onpick(self, event):
 #         if self.fig.canvas.manager.toolbar._active is None:
@@ -187,7 +190,7 @@ class PointBrowser(object):
                                                         self.flux_knots))]
             self.vertical_x_cen.sort()
             self.update()
-
+    
     def update(self):
         if self.lastind is None:
             return
@@ -218,8 +221,9 @@ class PointBrowser(object):
                                         'x', c='C1')
 
         self.fig.canvas.draw()
+        
+    
 
-    '''------SPLINE FITTING FUNCTIONS-------'''
 
     def determine_spline_pairs(self, wavelength, flux):
         final_prespline_fluxes = []
@@ -230,10 +234,13 @@ class PointBrowser(object):
             final_prespline_fluxes.append(np.median(flux[inds]))
         return final_prespline_fluxes
 
+
     def fit_spline(self):
+        
         if hasattr(self, 'spline_plot'):
             for line in self.spline_plot:
                 line.remove()  # Remove previous spline plot
+        
         if hasattr(self, 'norm_plot'):
             for line in self.norm_plot:
                 line.remove()
@@ -260,7 +267,7 @@ class PointBrowser(object):
 
         self.norm_plot = self.ax2.plot(self.wavelengths[self.file_number],
                                        norm_flux, 'black')
-
+    
     '''------NORMALIZATION ROUTINE------------'''
 
     def normalization_fit_spline(self, wavelength, flux, ind_range):
@@ -284,29 +291,33 @@ class PointBrowser(object):
         if os.path.isfile(outfilename):
             print("Spectrum already normalized.")
         else:
-            write_hermes(cur_file, norm_flux, outfilename)
+            write_espresso(cur_file, norm_flux, outfilename)
             print('Saved:  ' + outfilename.split('/')[-1])
-
+    
+  
     def reset_plots(self):
         try:
-            for i in self.spline_plot:
-                self.ax1.lines.remove(i)
-            for i in self.norm_plot:
-                self.ax2.lines.remove(i)
-            for i in self.raw_plot:
-                self.ax1.lines.remove(i)
+            self.ax1.clear()
+        #    self.ax2.clear()
+        
+        #    for i in self.spline_plot:
+        #        self.ax1.lines.remove(i)
+        #    for i in self.norm_plot:
+        #        self.ax2.lines.remove(i)
+        #    for i in self.raw_plot:
+        #        self.ax1.lines.remove(i)
         except Exception:
             pass
         try:
-            x = np.loadtxt(self.filepath + '/knots.txt')
+            x = np.loadtxt('/knots/'+self.filepath + '/knots.txt')
             self.vertical_x_cen = list(x)
             self.vertical_x_cen.sort()
         except Exception:
             pass
 
- #       plot_title = self.files[self.file_number].split('/')[2].split('_202')[0].replace('_', ' ')
-  #      self.ax1.set_title(plot_title + ' (' + str(self.file_number+1) + '/' +
-  #                         str(self.number_of_files) + ')')
+#        plot_title = self.files[self.file_number].split('/')[2].split('_202')[0].replace('_', ' ')
+#        self.ax1.set_title(plot_title + ' (' + str(self.file_number+1) + '/' +
+#                           str(self.number_of_files) + ')')
 #        self.ax1.set_title('Spectrum %i of %i' % (self.file_number+1,
 #                                                  self.number_of_files))
         self.raw_plot = self.ax1.plot(
@@ -321,7 +332,6 @@ class PointBrowser(object):
         self.flux_knots = self.determine_spline_pairs(
             self.wavelengths[self.file_number], self.fluxes[self.file_number])
         self.fit_spline()
-
 
 def picker(spec_directory=None, spec_file=None):
     if spec_directory:
@@ -344,7 +354,7 @@ def picker(spec_directory=None, spec_file=None):
         if os.path.isfile(outfilename):
             print("Spectrum already normalized.")
         else:
-            w, f = read_HERMES(files[i])
+            w, f = read_espresso(files[i])
             if len(f) < 10:
                 f = f[0]
             wavelengths.append(w)
@@ -382,7 +392,7 @@ def print_help():
 
 
 infolder = './'  # folder with the spectra to normalize
-outfolder = './norm'  # folder to save output spectra in, should exist beforehand
+outfolder = './norm/'  # folder to save output spectra in, should exist beforehand
 
 print_help()
 picker(infolder)
