@@ -236,6 +236,8 @@ class PointBrowser(object):
 
 
     def fit_spline(self):
+        tlusty = pd.read_csv('~/PhD_stuff/tlusty_models/BCvispec_v10_normalized/BC30000g300v10CN.vis.17_normalized.csv') # dir to synthetic spectra
+        self.tlusty_wave, self.tlusty_flux = tlusty['wave'], tlusty['normalized_flux']
         
         if hasattr(self, 'spline_plot'):
             for line in self.spline_plot:
@@ -267,6 +269,7 @@ class PointBrowser(object):
 
         self.norm_plot = self.ax2.plot(self.wavelengths[self.file_number],
                                        norm_flux, 'black')
+        self.tlusty_plot = self.ax2.plot(self.tlusty_wave, self.tlusty_flux, 'red') # comment this out if you dont wanna plot a synthetic spectra
     
     '''------NORMALIZATION ROUTINE------------'''
 
