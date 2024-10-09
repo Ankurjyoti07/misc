@@ -1,3 +1,10 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from functools import partial
+import scipy.optimize as so
+import glob
+from astropy.io import fits
+
 def read_espresso(infile):
     print("%s: input file is an espresso spectrum" % infile)
     
