@@ -4,6 +4,7 @@ from functools import partial
 import scipy.optimize as so
 import os, csv, glob
 from astropy.io import fits
+from tqdm import tqdm
 
 def gaussian(x, center, height, std, yoffset):
     return height * np.exp(-1 * (x - center)**2 / (2*std**2)) + yoffset
