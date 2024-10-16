@@ -48,7 +48,7 @@ def compute_mean_flux_for_lines(spectra_files, line_centers, line_widths):
         wavelengths, flux = read_spectrum(spectrum_file)
         all_flux.append(flux)    
     all_flux = np.array(all_flux)
-    mean_flux = np.mean(all_flux, axis=0)
+    mean_flux = np.median(all_flux, axis=0)
 
     mean_flux_for_lines = []
     for i, center in enumerate(line_centers):
