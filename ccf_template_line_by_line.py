@@ -77,7 +77,7 @@ def read_spectrum(infile):
     return wave, flux
 
 
-def rv_determination(w, f1, f2, velocity, method = 'gaussian', plot = True, ycutoff=-99999):    
+def rv_determination(w, f1, f2, velocity, method = 'gaussian', plot = False, ycutoff=-99999):    
     ccf = np.array(calc_ccf_template(w, f1, f2, velocity))
     inds = (ccf >= ycutoff)
     if method == 'gaussian':
@@ -115,41 +115,58 @@ def rv_determination(w, f1, f2, velocity, method = 'gaussian', plot = True, ycut
     
     return rv, rv_error
 
-def process_time_series(spectra_files, line_list_file, velocity, output_csv='rv_results.csv'):
+def process_time_series(spectra_files, line_list_file, velocity, output_csv='rv_results.csv', log_file='error_log.txt'):
     line_centers, line_widths = read_line_list(line_list_file)
     mean_flux = compute_mean_flux_for_lines(spectra_files, line_centers, line_widths)
     
     if not os.path.exists(output_csv):
         with open(output_csv, mode='w', newline='') as file:
             writer = csv.writer(file)
-            headers = ['Filename'] + [f'RV_{center}_Å' for center in line_centers] + [f'RV_error_{center}_Å' for center in line_centers]
+            headers = ['Filename', 'UTC', 'MJD-OBS', 'Airmass'] + [f'RV_{center}_Å' for center in line_centers] + [f'RV_error_{center}_Å' for center in line_centers]
             writer.writerow(headers)
-    for infile in spectra_files:
-        wavelength, flux = read_spectrum(infile)
-        rv_values = [infile]
-
-        for i, center in enumerate(line_centers):
-            mask = (wavelength > (center - line_widths[i]/2)) & (wavelength < (center + line_widths[i]/2))
-            flux_line = flux[mask]
-            wavelength_line = wavelength[mask]
-            if len(flux_line) == 0:
-                rv_values.append(None)
-                rv_values.append(None)
-                continue
-
-            ccf = calc_ccf_template(wavelength_line, mean_flux[i], flux_line, velocity)
-            try:
-                rv, rv_error = rv_determination(wavelength_line, mean_flux[i], flux_line, velocity)
-                rv_values.append(rv)
-                rv_values.append(rv_error)
-            except RuntimeError:
-                rv_values.append(None)
-                rv_values.append(None)
-
-        with open(output_csv, mode='a', newline='') as file:
-            writer = csv.writer(file)
-            writer.writerow(rv_values)
     
+    with open(log_file, 'w') as log:
+        log.write("Error Log\n")
+
+    for infile in tqdm(spectra_files, desc = 'processing:'):
+
+        try:
+            wavelength, flux = read_spectrum(infile)
+            header = fits.getheader(infile)
+            utc_time = header['DATE-OBS']
+            mjd_obs = header['MJD-OBS']
+            airmass = header['HIERARCH ESO QC AIRM AVG']
+
+            rv_values, rv_errors = [], []
+            for i, center in enumerate(line_centers):
+                mask = (wavelength > (center - line_widths[i]/2)) & (wavelength < (center + line_widths[i]/2))
+                flux_line = flux[mask]
+                wavelength_line = wavelength[mask]
+                if len(flux_line) == 0:
+                    rv_values.append(None)
+                    rv_errors.append(None)
+                    continue
+
+                ccf = calc_ccf_template(wavelength_line, mean_flux[i], flux_line, velocity)
+                try:
+                    rv, rv_error = rv_determination(wavelength_line, mean_flux[i], flux_line, velocity)
+                    rv_values.append(rv)
+                    rv_errors.append(rv_error)
+                except RuntimeError:
+                    rv_values.append(None)
+                    rv_errors.append(None)
+
+            with open(output_csv, 'a', newline='') as file:
+                writer = csv.writer(file)
+                row = [infile, utc_time, mjd_obs, airmass] + rv_values + rv_errors
+                writer.writerow(row)
+        except Exception as e:
+
+            with open(log_file, 'a') as log:
+                log.write(f"Error with file {infile}: {str(e)}\n")
+                print('error logged for:', infile)
+            continue
+
     print(f"RV results saved to {output_csv}")
 
 
