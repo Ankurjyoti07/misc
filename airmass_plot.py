@@ -103,6 +103,17 @@ def plot_time_series(time_series_data, sorted_spectra_files, sorted_obs_dates):
         ax.set_title(f'Line Center: {line_center:.1f} Å')
         ax.legend(*scatter.legend_elements(), title="Line Status", loc='upper right')
 
+        ax2 = ax.twiny()
+        utc_times = Time(mjd_times, format='mjd').datetime
+        utc_labels = [utc.strftime('%H:%M:%S') for utc in utc_times]
+        tick_step = max(len(mjd_times) // 8, 1)
+        reduced_mjd_ticks = mjd_times[::tick_step]
+        reduced_utc_labels = utc_labels[::tick_step]
+        ax2.set_xlim(ax.get_xlim())  #align MJD and UTC axes
+        ax2.set_xticks(reduced_mjd_ticks)  #fewer ticks for UTC
+        ax2.set_xticklabels(reduced_utc_labels, rotation=45, ha='left')
+        ax2.set_xlabel('UTC Time')
+        
     for j in range(i + 1, len(axes)):
         fig.delaxes(axes[j])
 
@@ -121,17 +132,16 @@ def plot_time_series(time_series_data, sorted_spectra_files, sorted_obs_dates):
 
     def onclick(event):
         for ax_idx, ax in enumerate(axes):
-            if event.inaxes == ax:
-                clicked_pos = (event.xdata, event.ydata)  # Use mjd time for x-axis
-                distances = np.linalg.norm(time_series_positions[ax_idx] - clicked_pos, axis=1)
-                nearest_idx = np.argmin(distances)
-                nearest_mjd_time = time_series_positions[ax_idx][nearest_idx][0]
-                mjd_differences = np.abs(np.array(sorted_obs_dates) - nearest_mjd_time)
-                closest_mjd_idx = np.argmin(mjd_differences)
-                #debug stuff
-                spectrum_file = sorted_spectra_files[closest_mjd_idx]
-                show_spectrum(spectrum_file)
-                break    
+            clicked_pos = (event.xdata, event.ydata)  # Use mjd time for x-axis
+            distances = np.linalg.norm(time_series_positions[ax_idx] - clicked_pos, axis=1)
+            nearest_idx = np.argmin(distances)
+            nearest_mjd_time = time_series_positions[ax_idx][nearest_idx][0]
+            mjd_differences = np.abs(np.array(sorted_obs_dates) - nearest_mjd_time)
+            closest_mjd_idx = np.argmin(mjd_differences)
+            #debug stuff
+            spectrum_file = sorted_spectra_files[closest_mjd_idx]
+            show_spectrum(spectrum_file)
+            break    
     fig.canvas.mpl_connect('button_press_event', onclick)
     plt.tight_layout()
     plt.show()
