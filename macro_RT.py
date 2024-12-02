@@ -3,7 +3,7 @@ from scipy.special import erf                               # Error function
 from scipy.signal import fftconvolve 
 
 def macro_RT(xdata, ydata, zeta_r, zeta_t, aat):
-    c = 299792458 #~constants.c.cgs.value * units.cm.to(units.km)
+    c = 299792458 #in meters, set vmacro in meters too
     sq_pi = np.sqrt(np.pi)
     lambda0 = np.median(xdata)
     xspacing = xdata[1] - xdata[0]
