@@ -15,6 +15,7 @@ def read_spectrum(infile):
     wave, flux = data[0], data[1]
     return wave, flux
 
+# Compute weighted mean flux
 def get_mean_flux_weighted_efficient(glob_specdir):
     weighted_flux_sum = None
     weight_sum = None
@@ -38,12 +39,13 @@ def get_mean_flux_weighted_efficient(glob_specdir):
 
     return wavelengths, mean_flux
 
-spec_files = glob.glob('/home/c4011027/PhD_stuff/ESO_proposals/renorm_o2/norm/*.fits')[:500]
+# Load spectrum
+spec_files = glob.glob('/home/c4011027/PhD_stuff/ESO_proposals/normalized_corrected/*.fits')
 wavelength, flux = get_mean_flux_weighted_efficient(spec_files)
 
-output_file = "selected_wavelengths.txt"
+output_file = "selected_wavelengths_new.txt"
 
-#load existing file
+# Load existing selections
 if os.path.exists(output_file):
     selected_wavelengths = np.loadtxt(output_file).tolist()
     if isinstance(selected_wavelengths, float):
@@ -51,21 +53,22 @@ if os.path.exists(output_file):
 else:
     selected_wavelengths = []
 
+# Setup plot
 fig, ax = plt.subplots(figsize=(12, 6))
 ax.plot(wavelength, flux, label='Spectrum')
 ax.set_xlabel('Wavelength')
 ax.set_ylabel('Flux')
 ax.set_title('Click to mark regions; press "d" to delete nearest line')
 lines = []
-toolbar = plt.get_current_fig_manager().toolbar
+toolbar = plt.get_current_fig_manager().toolbar  # Get the Matplotlib toolbar
 
-
+# Draw existing lines
 for wl in selected_wavelengths:
     line = ax.axvline(wl, color='red', linestyle='--')
     lines.append((line, wl))
 plt.legend()
 
-
+# Find nearest wavelength
 def find_nearest(array, value):
     idx = (np.abs(array - value)).argmin()
     return array[idx]
@@ -76,17 +79,19 @@ def save_wavelengths():
         for wl in selected_wavelengths:
             f.write(f"{wl:.6f}\n")
 
-
+# Track mouse position
 mouse_x = None
 
 def onmove(event):
     global mouse_x
     if event.inaxes == ax:
         mouse_x = event.xdata
+
+# Mouse click handler (only add if not zooming/panning)
 def onclick(event):
-    if toolbar.mode: 
+    if toolbar.mode:  # If zoom or pan is active, ignore clicks
         return
-    if event.inaxes != ax or event.button != 1: 
+    if event.inaxes != ax or event.button != 1:  # Only left-click
         return
     x_click = event.xdata
     nearest_wl = find_nearest(wavelength, x_click)
@@ -97,6 +102,7 @@ def onclick(event):
     plt.draw()
     print(f"Selected: {nearest_wl:.4f}")
 
+# Press 'd' to delete nearest line
 def onkeypress(event):
     global mouse_x
     if event.key == 'd' and lines and mouse_x is not None:
@@ -109,6 +115,7 @@ def onkeypress(event):
         plt.draw()
         print(f"Deleted: {wl:.4f}")
 
+# Connect events
 fig.canvas.mpl_connect('button_press_event', onclick)
 fig.canvas.mpl_connect('motion_notify_event', onmove)
 fig.canvas.mpl_connect('key_press_event', onkeypress)
